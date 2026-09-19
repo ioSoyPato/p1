@@ -22,7 +22,24 @@ frontend/    React + TypeScript + Vite
   src/components/    KaTeX, gráficos (Recharts), tablas/paneles
 ```
 
-## Correr todo localmente
+## Correr todo con un solo contenedor Docker
+
+Una sola imagen, en la raíz del repo: la etapa 1 compila el frontend a
+archivos estáticos; la etapa 2 es el backend de FastAPI, que sirve esos
+archivos estáticos Y la API desde el mismo proceso y el mismo puerto (no hay
+`docker-compose`, no hay una segunda imagen, no hace falta CORS entre
+front y back porque ambos comparten origen).
+
+```bash
+docker build -t sesgo-simulador .
+docker run -p 8000:8000 sesgo-simulador
+```
+
+Abrir `http://localhost:8000`.
+
+## Correr todo localmente, sin Docker (dos procesos)
+
+Útil para desarrollar con hot-reload en ambos lados.
 
 ```bash
 # backend
@@ -37,7 +54,10 @@ npm install
 npm run dev
 ```
 
-Abrir la URL que imprime Vite (por defecto `http://localhost:5174`).
+Abrir la URL que imprime Vite (por defecto `http://localhost:5174`). En este
+modo el frontend le pega a `http://localhost:8000` explícitamente (ver
+`frontend/.env`); en la imagen Docker en cambio usa rutas relativas
+(`frontend/.env.production`), porque ahí ambos viven en el mismo origen.
 
 ## Decisiones de diseño que vale la pena saber de antemano
 

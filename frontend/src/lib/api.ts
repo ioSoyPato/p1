@@ -1,4 +1,8 @@
-export const API_BASE = (import.meta.env.VITE_API_BASE as string) || "http://localhost:8000";
+// Empty string = same-origin relative requests ("/api/..."), which is what
+// the single Docker image needs (one process, one port, frontend and API
+// served from the same origin). Local two-terminal development overrides
+// this explicitly via frontend/.env (VITE_API_BASE=http://localhost:8000).
+export const API_BASE = (import.meta.env.VITE_API_BASE as string) || "";
 
 export interface TraitSpec {
   kind: "fixed" | "uniform" | "beta";

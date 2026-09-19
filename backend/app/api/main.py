@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 import time
+from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from ..simulator.scenario import STANDARD_SCENARIOS, get_scenario, ScenarioConfig
 from ..simulator.engine import run_simulation, SimulationResult
@@ -177,3 +180,13 @@ def validation_monotonicity():
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+# Serve the built frontend (single-image deployment: one process, one port).
+# Mounted last and at "/" so every explicit /api/... route above still wins
+# route resolution; this only ever matches what nothing else claimed.
+# Absent in plain local dev (no frontend build next to the backend), which is
+# fine -- the API keeps working on its own against the Vite dev server.
+_frontend_dist = Path(os.environ.get("FRONTEND_DIST", "/app/frontend_dist"))
+if _frontend_dist.is_dir():
+    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")
