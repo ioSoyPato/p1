@@ -36,6 +36,11 @@ def _scenario_meta(sc: ScenarioConfig) -> dict:
         "delta": dataclasses.asdict(sc.delta), "kappa": dataclasses.asdict(sc.kappa),
         "rebalance_confound": sc.rebalance_confound, "reversal_confound": sc.reversal_confound,
         "n_agents": sc.n_agents,
+        # hazard-model constants, exposed so the frontend's worked example can
+        # substitute the SAME numbers this run actually used, never a
+        # hardcoded copy that could drift out of sync with the backend.
+        "lam0": sc.lam0, "k_scale": sc.k_scale, "d_scale": sc.d_scale,
+        "x_ref": sc.x_ref, "h_max": sc.h_max,
     }
 
 
@@ -68,7 +73,7 @@ def _run_and_package(sc: ScenarioConfig, n_boot: int = 1000, max_points: int = 2
         "capital": res.agents.capital[idx], "n_positions": res.agents.n_positions[idx],
         "turnover": res.turnover[idx], "net_return": res.net_return[idx],
         "gross_fill_return": res.gross_fill_return[idx], "gross_mid_return": res.gross_mid_return[idx],
-        "risk_exposure": res.risk_exposure[idx],
+        "risk_exposure": res.risk_exposure[idx], "portfolio_size": res.portfolio_size[idx],
     }
 
     regs_out = {}

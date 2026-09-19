@@ -14,6 +14,7 @@ export interface ScenarioMeta {
   delta: TraitSpec; kappa: TraitSpec;
   rebalance_confound: boolean; reversal_confound: boolean;
   n_agents: number;
+  lam0: number; k_scale: number; d_scale: number; x_ref: number; h_max: number;
 }
 
 export interface RegressionResult {
@@ -53,7 +54,7 @@ export interface SimSummary {
 export interface AgentsSample {
   delta: number[]; kappa: number[]; capital: number[]; n_positions: number[];
   turnover: number[]; net_return: number[]; gross_fill_return: number[];
-  gross_mid_return: number[]; risk_exposure: number[];
+  gross_mid_return: number[]; risk_exposure: number[]; portfolio_size: number[];
 }
 
 export interface TimeSeries {

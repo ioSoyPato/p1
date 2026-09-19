@@ -4,6 +4,7 @@ import { Panel, StatRow, Table, Badge, fmtPct, fmtNum, fmtP, sigStars } from "..
 import {
   PgrPlrBar, HistPair, DispositionOverTime, ValueIndexChart, TurnoverScatter, TurnoverOverTime,
 } from "../components/charts";
+import { WorkedExample } from "../components/WorkedExample";
 
 interface CustomForm {
   deltaKind: "fixed" | "uniform"; deltaValue: number;
@@ -220,6 +221,8 @@ function Results({ r }: { r: SimResult }) {
           { label: "operaciones medias / cuenta", value: r.summary.mean_n_trades.toFixed(1) },
         ]} />
       </Panel>
+
+      <WorkedExample r={r} />
 
       <Panel title="Efecto disposición — PGR vs. PLR" sub="Barras con intervalo de ±1.96 errores estándar (bootstrap por cuenta, no por operación).">
         <PgrPlrBar pgr={d.PGR} plr={d.PLR} sePgr={d.se_pgr_cluster} sePlr={d.se_plr_cluster} />
