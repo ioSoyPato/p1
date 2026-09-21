@@ -151,13 +151,13 @@ export function Escenarios() {
               volver a la comparación oficial (42 / 100)
             </button>
           )}
-          <div style={{ fontSize: "0.76rem", color: "var(--ink-muted)", maxWidth: "22rem" }}>
-            Los 8 escenarios comparten estas dos semillas por diseño (números aleatorios
-            comunes). Cambiarlas corre <strong>los mismos</strong> δ, κ y confusores de cada
-            escenario sobre un mercado y una población distintos — útil para mostrar que el
-            patrón no depende de un mercado con suerte, no para la comparación oficial entre
-            escenarios.
-          </div>
+          {result && (
+            <div style={{ fontSize: "0.76rem", color: "var(--ink-muted)", maxWidth: "26rem" }}>
+              {marketDescription(result)}
+              <br />
+              {populationDescription(result)}
+            </div>
+          )}
         </div>
       )}
 
@@ -224,6 +224,20 @@ export function Escenarios() {
       {result && <Results r={result} />}
     </div>
   );
+}
+
+function marketDescription(r: SimResult): string {
+  const mid = r.summary.mean_gross_mid_return;
+  const dir = mid >= 0 ? "subió" : "bajó";
+  return `La semilla de mercado ${r.scenario.price_seed} dio un mercado que ${dir} (${fmtPct(mid)} bruto, sin fricciones, a lo largo de estos ${r.summary.n_days} días).`;
+}
+
+function populationDescription(r: SimResult): string {
+  const cap = r.agents_sample.capital;
+  const npos = r.agents_sample.n_positions;
+  const avgCap = cap.reduce((a, b) => a + b, 0) / cap.length;
+  const avgN = npos.reduce((a, b) => a + b, 0) / npos.length;
+  return `La semilla de población ${r.scenario.seed} arrancó a las ${r.summary.n_agents.toLocaleString("es")} cuentas con un capital promedio de $${Math.round(avgCap).toLocaleString("es")} y ${avgN.toFixed(1)} posiciones por cuenta.`;
 }
 
 function ModeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
