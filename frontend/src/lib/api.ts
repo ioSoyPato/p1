@@ -14,6 +14,7 @@ export interface ScenarioMeta {
   delta: TraitSpec; kappa: TraitSpec;
   rebalance_confound: boolean; reversal_confound: boolean;
   n_agents: number;
+  seed: number; price_seed: number; n_days: number; n_securities: number;
   lam0: number; k_scale: number; d_scale: number; x_ref: number; h_max: number;
 }
 

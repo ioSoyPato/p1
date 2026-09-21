@@ -36,6 +36,13 @@ def _scenario_meta(sc: ScenarioConfig) -> dict:
         "delta": dataclasses.asdict(sc.delta), "kappa": dataclasses.asdict(sc.kappa),
         "rebalance_confound": sc.rebalance_confound, "reversal_confound": sc.reversal_confound,
         "n_agents": sc.n_agents,
+        # exposed so the frontend can re-run a standard scenario on a
+        # DIFFERENT market/population seed while keeping every other
+        # behavioral setting exactly as defined here (see /api/simulate's
+        # `custom` path) -- e.g. to show the same 8-scenario comparison is
+        # not an artifact of one lucky/unlucky price draw.
+        "seed": sc.seed, "price_seed": sc.price_seed,
+        "n_days": sc.price.n_days, "n_securities": sc.price.n_securities,
         # hazard-model constants, exposed so the frontend's worked example can
         # substitute the SAME numbers this run actually used, never a
         # hardcoded copy that could drift out of sync with the backend.
