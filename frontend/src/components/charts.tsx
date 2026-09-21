@@ -30,7 +30,7 @@ export function PgrPlrBar({
           contentStyle={{ background: "var(--paper-raised)", border: "1px solid var(--rule)", fontSize: 12 }}
         />
         <Bar dataKey="value" barSize={34} radius={[0, 3, 3, 0]}>
-          {data.map((d, i) => <Cell key={i} fill={i === 0 ? BLUE : ORANGE} />)}
+          {data.map((_, i) => <Cell key={i} fill={i === 0 ? BLUE : ORANGE} />)}
           <ErrorBar dataKey="err" width={6} strokeWidth={1.5} stroke="var(--ink-soft)" direction="x" />
         </Bar>
       </BarChart>

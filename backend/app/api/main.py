@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import dataclasses
+import os
 import time
+from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from ..simulator.scenario import STANDARD_SCENARIOS, get_scenario, ScenarioConfig
 from ..simulator.engine import run_simulation, SimulationResult
@@ -33,6 +36,18 @@ def _scenario_meta(sc: ScenarioConfig) -> dict:
         "delta": dataclasses.asdict(sc.delta), "kappa": dataclasses.asdict(sc.kappa),
         "rebalance_confound": sc.rebalance_confound, "reversal_confound": sc.reversal_confound,
         "n_agents": sc.n_agents,
+        # exposed so the frontend can re-run a standard scenario on a
+        # DIFFERENT market/population seed while keeping every other
+        # behavioral setting exactly as defined here (see /api/simulate's
+        # `custom` path) -- e.g. to show the same 8-scenario comparison is
+        # not an artifact of one lucky/unlucky price draw.
+        "seed": sc.seed, "price_seed": sc.price_seed,
+        "n_days": sc.price.n_days, "n_securities": sc.price.n_securities,
+        # hazard-model constants, exposed so the frontend's worked example can
+        # substitute the SAME numbers this run actually used, never a
+        # hardcoded copy that could drift out of sync with the backend.
+        "lam0": sc.lam0, "k_scale": sc.k_scale, "d_scale": sc.d_scale,
+        "x_ref": sc.x_ref, "h_max": sc.h_max,
     }
 
 
@@ -65,7 +80,7 @@ def _run_and_package(sc: ScenarioConfig, n_boot: int = 1000, max_points: int = 2
         "capital": res.agents.capital[idx], "n_positions": res.agents.n_positions[idx],
         "turnover": res.turnover[idx], "net_return": res.net_return[idx],
         "gross_fill_return": res.gross_fill_return[idx], "gross_mid_return": res.gross_mid_return[idx],
-        "risk_exposure": res.risk_exposure[idx],
+        "risk_exposure": res.risk_exposure[idx], "portfolio_size": res.portfolio_size[idx],
     }
 
     regs_out = {}
@@ -177,3 +192,13 @@ def validation_monotonicity():
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+# Serve the built frontend (single-image deployment: one process, one port).
+# Mounted last and at "/" so every explicit /api/... route above still wins
+# route resolution; this only ever matches what nothing else claimed.
+# Absent in plain local dev (no frontend build next to the backend), which is
+# fine -- the API keeps working on its own against the Vite dev server.
+_frontend_dist = Path(os.environ.get("FRONTEND_DIST", "/app/frontend_dist"))
+if _frontend_dist.is_dir():
+    app.mount("/", StaticFiles(directory=str(_frontend_dist), html=True), name="frontend")

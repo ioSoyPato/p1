@@ -1,4 +1,8 @@
-export const API_BASE = (import.meta.env.VITE_API_BASE as string) || "http://localhost:8000";
+// Empty string = same-origin relative requests ("/api/..."), which is what
+// the single Docker image needs (one process, one port, frontend and API
+// served from the same origin). Local two-terminal development overrides
+// this explicitly via frontend/.env (VITE_API_BASE=http://localhost:8000).
+export const API_BASE = (import.meta.env.VITE_API_BASE as string) || "";
 
 export interface TraitSpec {
   kind: "fixed" | "uniform" | "beta";
@@ -10,6 +14,8 @@ export interface ScenarioMeta {
   delta: TraitSpec; kappa: TraitSpec;
   rebalance_confound: boolean; reversal_confound: boolean;
   n_agents: number;
+  seed: number; price_seed: number; n_days: number; n_securities: number;
+  lam0: number; k_scale: number; d_scale: number; x_ref: number; h_max: number;
 }
 
 export interface RegressionResult {
@@ -49,7 +55,7 @@ export interface SimSummary {
 export interface AgentsSample {
   delta: number[]; kappa: number[]; capital: number[]; n_positions: number[];
   turnover: number[]; net_return: number[]; gross_fill_return: number[];
-  gross_mid_return: number[]; risk_exposure: number[];
+  gross_mid_return: number[]; risk_exposure: number[]; portfolio_size: number[];
 }
 
 export interface TimeSeries {

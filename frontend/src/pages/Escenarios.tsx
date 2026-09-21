@@ -4,6 +4,7 @@ import { Panel, StatRow, Table, Badge, fmtPct, fmtNum, fmtP, sigStars } from "..
 import {
   PgrPlrBar, HistPair, DispositionOverTime, ValueIndexChart, TurnoverScatter, TurnoverOverTime,
 } from "../components/charts";
+import { WorkedExample } from "../components/WorkedExample";
 
 interface CustomForm {
   deltaKind: "fixed" | "uniform"; deltaValue: number;
@@ -21,11 +22,16 @@ const DEFAULT_CUSTOM: CustomForm = {
   seed: 100, price_seed: 42,
 };
 
+const DEFAULT_MARKET_SEED = 42;   // matches scenario.py's _SHARED_PRICE_SEED
+const DEFAULT_POP_SEED = 100;     // matches scenario.py's _SHARED_POP_SEED
+
 export function Escenarios() {
   const [scenarios, setScenarios] = useState<ScenarioMeta[]>([]);
   const [selected, setSelected] = useState<string>("s1_null");
   const [mode, setMode] = useState<"standard" | "custom">("standard");
   const [custom, setCustom] = useState<CustomForm>(DEFAULT_CUSTOM);
+  const [marketSeed, setMarketSeed] = useState(DEFAULT_MARKET_SEED);
+  const [popSeed, setPopSeed] = useState(DEFAULT_POP_SEED);
   const [result, setResult] = useState<SimResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,10 +40,30 @@ export function Escenarios() {
     api.scenarios().then((r) => setScenarios(r.scenarios)).catch((e) => setError(String(e)));
   }, []);
 
+  // Runs one of the 8 standard scenarios EXACTLY as defined in scenario.py
+  // (same delta/kappa spec, same confound flags, same hazard constants),
+  // except the two seeds -- which come from the controls above the tab
+  // picker. This is how you can show "does scenario 3 still look like
+  // disposition on a totally different simulated market?" without touching
+  // any of the behavioral definition.
   async function runStandard(key: string) {
+    const meta = scenarios.find((s) => s.key === key);
+    if (!meta) return; // scenarios list hasn't loaded yet; the effect below re-fires once it has
     setLoading(true); setError(null);
     try {
-      const r = await api.simulate({ scenario_key: key });
+      const body = {
+        custom: {
+          key: meta.key, name: meta.name, description: meta.description,
+          delta: meta.delta, kappa: meta.kappa,
+          n_agents: meta.n_agents, seed: popSeed, price_seed: marketSeed,
+          price: { n_securities: meta.n_securities, n_days: meta.n_days },
+          rebalance_confound: meta.rebalance_confound, reversal_confound: meta.reversal_confound,
+          lam0: meta.lam0, k_scale: meta.k_scale, d_scale: meta.d_scale,
+          x_ref: meta.x_ref, h_max: meta.h_max,
+          n_boot: 1000,
+        },
+      };
+      const r = await api.simulate(body);
       setResult(r);
     } catch (e) { setError(String(e)); } finally { setLoading(false); }
   }
@@ -66,7 +92,10 @@ export function Escenarios() {
     } catch (e) { setError(String(e)); } finally { setLoading(false); }
   }
 
-  useEffect(() => { if (mode === "standard") runStandard(selected); /* eslint-disable-next-line */ }, [selected, mode]);
+  useEffect(() => {
+    if (mode === "standard" && scenarios.length > 0) runStandard(selected);
+    /* eslint-disable-next-line */
+  }, [selected, mode, scenarios, marketSeed, popSeed]);
 
   const activeMeta = useMemo(() => scenarios.find((s) => s.key === selected), [scenarios, selected]);
 
@@ -85,6 +114,52 @@ export function Escenarios() {
         <ModeButton active={mode === "standard"} onClick={() => setMode("standard")}>8 escenarios estándar</ModeButton>
         <ModeButton active={mode === "custom"} onClick={() => setMode("custom")}>Constructor personalizado</ModeButton>
       </div>
+
+      {mode === "standard" && (
+        <div
+          style={{
+            display: "flex", flexWrap: "wrap", gap: "1.2rem", alignItems: "flex-end",
+            border: "1px dashed var(--rule-strong)", borderRadius: "3px",
+            padding: "0.7rem 0.9rem", marginBottom: "1rem",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: "0.76rem", color: "var(--ink-muted)", marginBottom: "0.2rem" }}>
+              semilla de mercado (¿qué mercado simulado?)
+            </div>
+            <input
+              type="number" value={marketSeed}
+              onChange={(e) => setMarketSeed(parseInt(e.target.value || "0", 10))}
+              style={{ ...seedInputStyle }}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: "0.76rem", color: "var(--ink-muted)", marginBottom: "0.2rem" }}>
+              semilla de población (¿qué cuentas de partida?)
+            </div>
+            <input
+              type="number" value={popSeed}
+              onChange={(e) => setPopSeed(parseInt(e.target.value || "0", 10))}
+              style={{ ...seedInputStyle }}
+            />
+          </div>
+          {(marketSeed !== DEFAULT_MARKET_SEED || popSeed !== DEFAULT_POP_SEED) && (
+            <button
+              onClick={() => { setMarketSeed(DEFAULT_MARKET_SEED); setPopSeed(DEFAULT_POP_SEED); }}
+              style={{ background: "none", border: "1px solid var(--rule)", borderRadius: "3px", padding: "0.4rem 0.7rem", fontSize: "0.78rem", color: "var(--ink-soft)", cursor: "pointer" }}
+            >
+              volver a la comparación oficial (42 / 100)
+            </button>
+          )}
+          <div style={{ fontSize: "0.76rem", color: "var(--ink-muted)", maxWidth: "22rem" }}>
+            Los 8 escenarios comparten estas dos semillas por diseño (números aleatorios
+            comunes). Cambiarlas corre <strong>los mismos</strong> δ, κ y confusores de cada
+            escenario sobre un mercado y una población distintos — útil para mostrar que el
+            patrón no depende de un mercado con suerte, no para la comparación oficial entre
+            escenarios.
+          </div>
+        </div>
+      )}
 
       {mode === "standard" && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "1.4rem" }}>
@@ -205,6 +280,11 @@ const selectStyle: React.CSSProperties = {
   border: "1px solid var(--rule)", borderRadius: "3px", background: "var(--paper)", color: "var(--ink)",
 };
 
+const seedInputStyle: React.CSSProperties = {
+  width: "7rem", padding: "0.35rem 0.4rem", fontSize: "0.82rem",
+  border: "1px solid var(--rule)", borderRadius: "3px", background: "var(--paper)", color: "var(--ink)",
+};
+
 function Results({ r }: { r: SimResult }) {
   const d = r.disposition;
   const oc = r.overconfidence;
@@ -220,6 +300,8 @@ function Results({ r }: { r: SimResult }) {
           { label: "operaciones medias / cuenta", value: r.summary.mean_n_trades.toFixed(1) },
         ]} />
       </Panel>
+
+      <WorkedExample r={r} />
 
       <Panel title="Efecto disposición — PGR vs. PLR" sub="Barras con intervalo de ±1.96 errores estándar (bootstrap por cuenta, no por operación).">
         <PgrPlrBar pgr={d.PGR} plr={d.PLR} sePgr={d.se_pgr_cluster} sePlr={d.se_plr_cluster} />
